@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Recourse — UI concept</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="First-pass UI concept for Recourse: intake and grounding-report screens">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;1,8..60,500&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f2f4ef;
+    --bg-raised: #fbfbf9;
+    --paper: #fffefb;
+    --ink: #161a17;
+    --ink-soft: #454f49;
+    --ink-faint: #78827b;
+    --line: #d7dbd2;
+    --line-strong: #b7beb0;
+    --accent: #1f5d4e;
+    --accent-ink: #ffffff;
+    --accent-soft: #e2ece7;
+    --seal: #9a6a12;
+    --seal-soft: #f4e6cc;
+    --seal-line: #d8b673;
+    --danger: #8a2c22;
+    --danger-soft: #f6e4e0;
+    --focus: #1f5d4e;
+    --shadow: 0 1px 2px rgba(22,26,23,0.06), 0 8px 24px -12px rgba(22,26,23,0.18);
+    --radius-s: 3px;
+    --radius-m: 6px;
+    --serif: "Source Serif 4", Georgia, serif;
+    --sans: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181a;
+      --bg-raised: #1a1f21;
+      --paper: #1c2224;
+      --ink: #eceae4;
+      --ink-soft: #b7bfb8;
+      --ink-faint: #838d86;
+      --line: #313a37;
+      --line-strong: #48534d;
+      --accent: #59a98c;
+      --accent-ink: #0d1512;
+      --accent-soft: #1f2f2a;
+      --seal: #d9a441;
+      --seal-soft: #2c2415;
+      --seal-line: #6b5525;
+      --danger: #d97c6c;
+      --danger-soft: #2e1c18;
+      --focus: #59a98c;
+      --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 28px -14px rgba(0,0,0,0.6);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181a;
+    --bg-raised: #1a1f21;
+    --paper: #1c2224;
+    --ink: #eceae4;
+    --ink-soft: #b7bfb8;
+    --ink-faint: #838d86;
+    --line: #313a37;
+    --line-strong: #48534d;
+    --accent: #59a98c;
+    --accent-ink: #0d1512;
+    --accent-soft: #1f2f2a;
+    --seal: #d9a441;
+    --seal-soft: #2c2415;
+    --seal-line: #6b5525;
+    --danger: #d97c6c;
+    --danger-soft: #2e1c18;
+    --focus: #59a98c;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4), 0 12px 28px -14px rgba(0,0,0,0.6);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  ::selection { background: var(--seal-soft); color: var(--ink); }
+  a { color: var(--accent); }
+  button { font-family: inherit; }
+  button:focus-visible, a:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* ---- Chrome shared across both screens ---- */
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(6px);
+  }
+  .wordmark {
+    font-family: var(--mono); font-size: 13px; font-weight: 600;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .wordmark .mark {
+    width: 18px; height: 18px; border: 1.5px solid var(--ink); border-radius: 2px;
+    display: grid; place-items: center; font-family: var(--serif); font-size: 12px; font-weight: 700;
+  }
+  .jurisdiction-tag {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em;
+    color: var(--ink-soft); border: 1px solid var(--line-strong);
+    padding: 4px 9px; border-radius: 20px; white-space: nowrap;
+  }
+  .screen-toggle {
+    display: flex; gap: 2px; background: var(--bg-raised); border: 1px solid var(--line);
+    border-radius: 20px; padding: 2px;
+  }
+  .screen-toggle button {
+    border: none; background: transparent; color: var(--ink-soft);
+    font-size: 12.5px; font-weight: 600; padding: 6px 13px; border-radius: 18px;
+    cursor: pointer; transition: background .15s, color .15s;
+  }
+  .screen-toggle button[aria-pressed="true"] {
+    background: var(--ink); color: var(--bg);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .screen-toggle button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  }
+  :root[data-theme="dark"] .screen-toggle button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 0 20px 80px; }
+  main.wide { max-width: 1320px; }
+  .caption {
+    text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+    color: var(--ink-faint); text-transform: uppercase; padding: 18px 0 6px;
+  }
+
+  /* ================= SCREEN 0: LANDING ================= */
+  #screen-landing { display: block; }
+  .landing-hero {
+    padding: 76px 0 56px; max-width: 780px; border-bottom: 1px solid var(--line); margin-bottom: 48px;
+  }
+  h1.landing-title {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(34px, 5.4vw, 58px);
+    line-height: 1.08; letter-spacing: -0.01em; margin: 0 0 22px; text-wrap: balance;
+  }
+  .landing-sub {
+    font-size: 17.5px; line-height: 1.65; color: var(--ink-soft); max-width: 60ch; margin: 0 0 30px;
+  }
+  .landing-cta-row { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+  .btn-lg { padding: 14px 24px; font-size: 15.5px; }
+  .link-quiet {
+    font-size: 14px; font-weight: 600; color: var(--ink-soft); text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--line-strong); padding-bottom: 2px;
+  }
+  .link-quiet:hover { color: var(--accent); border-color: var(--accent); }
+
+  .pillars {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1px;
+    background: var(--line); border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden;
+    margin-bottom: 52px;
+  }
+  .pillar { background: var(--paper); padding: 26px 24px; }
+  .pillar .pillar-label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 12px;
+  }
+  .pillar h3 {
+    font-family: var(--serif); font-size: 19px; font-weight: 600; margin: 0 0 8px; line-height: 1.3;
+  }
+  .pillar p { font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); margin: 0; }
+
+  .demo-peek {
+    display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 0;
+    border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden; margin-bottom: 56px;
+    box-shadow: var(--shadow);
+  }
+  @media (max-width: 720px) { .demo-peek { grid-template-columns: 1fr; } }
+  .demo-peek .side { padding: 22px 24px; background: var(--paper); }
+  .demo-peek .side + .side { border-left: 1px solid var(--line); }
+  @media (max-width: 720px) { .demo-peek .side + .side { border-left: none; border-top: 1px solid var(--line); } }
+  .demo-peek .side-label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--ink-faint); margin-bottom: 14px;
+  }
+  .demo-line { font-family: var(--serif); font-size: 14.5px; line-height: 1.6; border-bottom: 1px solid var(--line-strong); padding-bottom: 8px; margin-bottom: 10px; display: flex; align-items: baseline; gap: 8px; }
+
+  .landing-footer-cta {
+    text-align: center; padding: 48px 20px; background: var(--accent-soft); border: 1px solid var(--line);
+    border-radius: var(--radius-m); margin-bottom: 40px;
+  }
+  .landing-footer-cta h2 {
+    font-family: var(--serif); font-weight: 600; font-size: 26px; margin: 0 0 10px;
+  }
+  .landing-footer-cta p { color: var(--ink-soft); font-size: 14.5px; margin: 0 0 22px; }
+
+  /* ================= SCREEN 1: INTAKE ================= */
+  #screen-intake { display: none; }
+  .intake-hero {
+    padding: 56px 0 8px; max-width: 760px;
+  }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--accent); display: flex; align-items: center; gap: 8px; margin-bottom: 18px;
+  }
+  .eyebrow::before {
+    content: ""; width: 6px; height: 6px; background: var(--accent); border-radius: 50%; display: inline-block;
+  }
+  h1.intake-title {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(30px, 4.4vw, 46px);
+    line-height: 1.12; letter-spacing: -0.01em; margin: 0 0 18px; text-wrap: balance;
+  }
+  .intake-sub {
+    font-size: 16.5px; line-height: 1.6; color: var(--ink-soft); max-width: 58ch; margin: 0 0 36px;
+  }
+  .intake-sub strong { color: var(--ink); font-weight: 600; }
+
+  .intake-form {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-m);
+    box-shadow: var(--shadow); overflow: hidden; margin-bottom: 40px;
+  }
+  .intake-form-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--bg-raised);
+  }
+  .intake-form-head .label {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .intake-form-head .charcount { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); }
+  textarea.pad {
+    width: 100%; border: none; resize: vertical; min-height: 148px;
+    padding: 20px 22px 8px; font-family: var(--serif); font-size: 18px; line-height: 1.75;
+    color: var(--ink); background:
+      repeating-linear-gradient(var(--paper) 0 36px, var(--line) 36px 37px);
+    background-attachment: local;
+    display: block;
+  }
+  textarea.pad::placeholder { color: var(--ink-faint); font-style: italic; }
+  .intake-form-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 14px 18px; border-top: 1px solid var(--line);
+  }
+  .privacy-note { font-size: 12.5px; color: var(--ink-faint); max-width: 40ch; }
+  .btn {
+    font-family: var(--sans); font-weight: 600; font-size: 14.5px; cursor: pointer;
+    border-radius: var(--radius-s); padding: 11px 20px; border: 1px solid transparent;
+    display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+    transition: filter .12s, transform .12s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+  .btn-ghost:hover { background: var(--bg-raised); }
+
+  .steps {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0; border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden;
+    margin-bottom: 40px; background: var(--paper);
+  }
+  .step {
+    padding: 18px 16px; border-right: 1px solid var(--line); position: relative;
+  }
+  .step:last-child { border-right: none; }
+  .step .num {
+    font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 8px; display: block;
+  }
+  .step .step-label { font-size: 13.5px; font-weight: 600; line-height: 1.35; margin-bottom: 4px; }
+  .step .step-detail { font-size: 12px; color: var(--ink-faint); line-height: 1.45; }
+
+  .trust-strip {
+    display: flex; gap: 14px; align-items: flex-start; padding: 18px 20px;
+    background: var(--accent-soft); border: 1px solid var(--line); border-radius: var(--radius-m);
+    margin-bottom: 24px;
+  }
+  .trust-strip .icon {
+    width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid var(--accent);
+    color: var(--accent); display: grid; place-items: center; font-family: var(--serif); font-weight: 700;
+    font-size: 14px; flex-shrink: 0;
+  }
+  .trust-strip p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--ink-soft); }
+  .trust-strip a { font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+
+  /* ================= SCREEN 2: WORKSPACE ================= */
+  #screen-workspace { display: none; }
+  .result-head {
+    padding: 44px 0 22px; display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin-bottom: 28px;
+  }
+  h1.result-title {
+    font-family: var(--serif); font-weight: 600; font-size: clamp(24px, 3vw, 32px);
+    margin: 0 0 8px; letter-spacing: -0.01em;
+  }
+  .result-sub { font-size: 14px; color: var(--ink-soft); max-width: 50ch; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
+    padding: 8px 14px 8px 10px; border-radius: 20px; background: var(--accent-soft); color: var(--accent);
+    border: 1px solid var(--line);
+  }
+  .status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+  .result-actions { display: flex; gap: 10px; }
+
+  .workspace-layout {
+    display: grid; grid-template-columns: 292px minmax(0, 1fr); gap: 24px; align-items: start;
+  }
+  @media (max-width: 980px) { .workspace-layout { grid-template-columns: 1fr; } }
+
+  .config-panel { display: flex; flex-direction: column; gap: 18px; position: sticky; top: 78px; }
+  @media (max-width: 980px) { .config-panel { position: static; } }
+
+  .config-card {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-m); overflow: hidden;
+  }
+  .config-card-head {
+    padding: 11px 16px; border-bottom: 1px solid var(--line); background: var(--bg-raised);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .config-card-head .label {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint);
+  }
+  .config-card-body { padding: 14px 16px; }
+
+  .field-row { margin-bottom: 13px; }
+  .field-row:last-child { margin-bottom: 0; }
+  .field-row .fr-label {
+    font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-faint);
+    display: flex; align-items: center; gap: 6px; margin-bottom: 5px;
+  }
+  .field-row input, .field-row textarea {
+    width: 100%; border: 1px solid var(--line-strong); border-radius: var(--radius-s);
+    background: var(--bg-raised); color: var(--ink); font-family: var(--sans); font-size: 13.5px;
+    padding: 8px 10px; resize: vertical;
+  }
+  .field-row textarea { font-family: var(--serif); font-size: 14px; min-height: 64px; }
+  .field-row input:focus, .field-row textarea:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+
+  .source-row {
+    display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line);
+  }
+  .source-row:last-of-type { border-bottom: none; }
+  .source-row .src-name { font-size: 12.5px; font-weight: 600; line-height: 1.4; }
+  .source-row .src-meta { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); }
+  .badge {
+    font-family: var(--mono); font-size: 10px; font-weight: 600; letter-spacing: 0.03em;
+    padding: 2px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
+  }
+  .badge-verified { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--line); }
+  .badge-unverified { background: var(--seal-soft); color: var(--seal); border: 1px solid var(--seal-line); }
+
+  .switch { position: relative; width: 32px; height: 18px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .switch .slider {
+    position: absolute; inset: 0; background: var(--line-strong); border-radius: 20px; cursor: pointer; transition: background .15s;
+  }
+  .switch .slider::before {
+    content: ""; position: absolute; width: 12px; height: 12px; left: 3px; top: 3px;
+    background: var(--paper); border-radius: 50%; transition: transform .15s;
+  }
+  .switch input:checked + .slider { background: var(--accent); }
+  .switch input:checked + .slider::before { transform: translateX(14px); }
+
+  .add-jurisdiction summary {
+    cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--accent);
+    list-style: none; display: flex; align-items: center; gap: 6px; padding: 4px 0;
+  }
+  .add-jurisdiction summary::-webkit-details-marker { display: none; }
+  .add-jurisdiction summary::before { content: "+"; font-family: var(--mono); }
+  .add-jurisdiction[open] summary::before { content: "–"; }
+  .add-jurisdiction-body { padding-top: 12px; }
+  .add-jurisdiction-body p { font-size: 12px; line-height: 1.55; color: var(--ink-soft); margin: 0 0 10px; }
+  .prompt-box {
+    font-family: var(--mono); font-size: 11px; line-height: 1.55; background: var(--bg-raised);
+    border: 1px solid var(--line-strong); border-radius: var(--radius-s); padding: 10px; color: var(--ink-soft);
+    max-height: 110px; overflow-y: auto; margin-bottom: 8px; white-space: pre-wrap;
+  }
+  .btn-sm { padding: 7px 12px; font-size: 12.5px; width: 100%; justify-content: center; }
+  .btn-outline { background: transparent; border-color: var(--accent); color: var(--accent); }
+  .btn-outline:hover { background: var(--accent-soft); }
+
+  .panel {
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-m);
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .panel-head {
+    padding: 12px 18px; border-bottom: 1px solid var(--line); background: var(--bg-raised);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .panel-head .label {
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--ink-faint);
+  }
+
+  /* form facsimile */
+  .form-doc { padding: 26px 28px 30px; font-family: var(--serif); }
+  .form-doc-top {
+    display: flex; justify-content: space-between; align-items: flex-start;
+    border-bottom: 2px solid var(--ink); padding-bottom: 10px; margin-bottom: 16px;
+  }
+  .form-doc-top .code {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-faint); text-align: right; line-height: 1.5;
+  }
+  .form-doc-top .title { font-size: 15px; font-weight: 700; max-width: 34ch; line-height: 1.35; }
+  .form-field { margin-bottom: 14px; position: relative; }
+  .form-field .fl {
+    font-family: var(--sans); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ink-faint); display: flex; align-items: center; gap: 6px; margin-bottom: 4px;
+  }
+  .form-field .fv {
+    font-size: 16px; border-bottom: 1px solid var(--line-strong); padding-bottom: 6px; line-height: 1.5;
+  }
+  .tag {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600; color: var(--seal);
+    background: var(--seal-soft); border: 1px solid var(--seal-line); border-radius: 4px;
+    padding: 1px 6px; line-height: 1.6;
+  }
+  .form-checkbox-row { display: flex; gap: 22px; margin: 18px 0 6px; }
+  .form-checkbox { display: flex; align-items: center; gap: 7px; font-size: 13px; font-family: var(--sans); }
+  .form-checkbox .box {
+    width: 15px; height: 15px; border: 1.5px solid var(--ink-soft); border-radius: 2px; flex-shrink: 0; position: relative;
+  }
+  .form-checkbox.checked .box { background: var(--accent); border-color: var(--accent); }
+  .form-checkbox.checked .box::after {
+    content: "✓"; position: absolute; inset: 0; color: var(--accent-ink); font-size: 11px; text-align: center; line-height: 15px; font-family: var(--sans);
+  }
+  .form-amount {
+    margin-top: 18px; padding-top: 16px; border-top: 1px dashed var(--line-strong);
+    display: flex; align-items: baseline; justify-content: space-between;
+  }
+  .form-amount .amt { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* grounding report list */
+  .report-list { list-style: none; margin: 0; padding: 6px 0; }
+  .report-item { padding: 14px 18px; border-bottom: 1px solid var(--line); display: flex; gap: 12px; }
+  .report-item:last-child { border-bottom: none; }
+  .report-item .tag { flex-shrink: 0; margin-top: 2px; }
+  .report-body { flex: 1; min-width: 0; }
+  .report-claim { font-size: 13.5px; line-height: 1.5; margin-bottom: 6px; }
+  .report-source {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-faint); margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .report-source .src-link { color: var(--accent); font-weight: 600; }
+  .report-quote {
+    font-size: 12px; line-height: 1.55; color: var(--ink-soft); background: var(--bg-raised);
+    border-left: 2px solid var(--seal-line); padding: 8px 10px; border-radius: 0 4px 4px 0; font-style: italic;
+  }
+
+  footer.strip {
+    margin-top: 60px; padding: 22px 0; border-top: 1px solid var(--line);
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;
+    font-size: 12px; color: var(--ink-faint); font-family: var(--mono);
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wordmark"><span class="mark">R</span> Recourse</div>
+  <div class="screen-toggle" role="tablist" aria-label="Preview screen">
+    <button type="button" id="tab-landing" aria-pressed="true" onclick="showScreen('landing')">0 · Landing</button>
+    <button type="button" id="tab-intake" aria-pressed="false" onclick="showScreen('intake')">1 · Intake</button>
+    <button type="button" id="tab-workspace" aria-pressed="false" onclick="showScreen('workspace')">2 · Workspace</button>
+  </div>
+  <span class="jurisdiction-tag">California · Small claims</span>
+</div>
+
+<main>
+
+<!-- ================= SCREEN 0 ================= -->
+<section id="screen-landing">
+  <div class="landing-hero">
+    <div class="eyebrow">Access to justice · Security deposit claims</div>
+    <h1 class="landing-title">Small claims court was built so you wouldn't need a lawyer. The forms weren't.</h1>
+    <p class="landing-sub">If your landlord kept your deposit, you're allowed to ask for it back yourself — no attorney required, that's how California set up small claims court. What's hard is knowing whether you qualify, what to write, and whether you're about to spend a filing fee on a claim that gets thrown out. Recourse checks your facts against the real statute and fills out the real court form, and shows you exactly where every line came from.</p>
+    <div class="landing-cta-row">
+      <button class="btn btn-primary btn-lg" onclick="showScreen('intake')">Start my claim →</button>
+      <a class="link-quiet" href="#" onclick="showScreen('workspace'); return false;">See a grounded filing first</a>
+    </div>
+  </div>
+
+  <div class="pillars">
+    <div class="pillar">
+      <div class="pillar-label">01 — Grounded, not remembered</div>
+      <h3>Reads the actual statute</h3>
+      <p>The $12,500 small-claims limit comes from CCP §116.221, retrieved at the time you file — not recalled from memory, which is exactly where a generic AI gets confidently wrong about the law.</p>
+    </div>
+    <div class="pillar">
+      <div class="pillar-label">02 — Real, not a lookalike</div>
+      <h3>Fills the real SC-100</h3>
+      <p>You get California's actual Judicial Council form, populated with your facts — the same document the clerk expects, not a document that just resembles one.</p>
+    </div>
+    <div class="pillar">
+      <div class="pillar-label">03 — Checked, not trusted blindly</div>
+      <h3>Self-verifies before you see it</h3>
+      <p>A second pass re-checks every fact on the draft against what you actually said and against the retrieved statute — catching our own mistakes before they reach you.</p>
+    </div>
+  </div>
+
+  <div class="demo-peek">
+    <div class="side">
+      <div class="side-label">What you said</div>
+      <div class="demo-line">"My landlord kept my $1,500 deposit and won't explain why. It's been 3 months since I moved out."</div>
+    </div>
+    <div class="side">
+      <div class="side-label">What ends up on the form — traced</div>
+      <div class="demo-line"><span class="tag">5</span> Amount claimed: $1,500.00</div>
+      <div class="demo-line" style="border-bottom:none; margin-bottom:0;"><span class="tag">4</span> Basis: 21-day return deadline, Civ. Code §1950.5(g)(1)</div>
+    </div>
+  </div>
+
+  <div class="landing-footer-cta">
+    <h2>You don't need to know the law to check it.</h2>
+    <p>Describe what happened in plain language — takes about two minutes.</p>
+    <button class="btn btn-primary btn-lg" onclick="showScreen('intake')">Start my claim →</button>
+  </div>
+</section>
+
+<!-- ================= SCREEN 1 ================= -->
+<section id="screen-intake">
+  <div class="intake-hero">
+    <div class="eyebrow">Self-help filing assistant — security deposit claims</div>
+    <h1 class="intake-title">Tell us what happened. We check it against the real law before anything else does.</h1>
+    <p class="intake-sub">You don't need a lawyer for small claims court — California built it that way on purpose. Describe your situation in your own words, and we'll confirm every fact, every dollar amount, and every eligibility rule against the <strong>actual statute and the actual court form</strong> before you see a draft.</p>
+  </div>
+
+  <div class="intake-form">
+    <div class="intake-form-head">
+      <span class="label">Describe your situation</span>
+      <span class="charcount">0 / 2,000</span>
+    </div>
+    <textarea class="pad" placeholder="My landlord kept my $1,500 deposit and won't explain why. It's been 3 months since I moved out and I've asked twice in writing."></textarea>
+    <div class="intake-form-foot">
+      <span class="privacy-note">Nothing is filed or submitted anywhere until you download it yourself.</span>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-ghost">Save draft</button>
+        <button class="btn btn-primary" onclick="showScreen('workspace')">Check my case →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="steps">
+    <div class="step"><span class="num">01</span><div class="step-label">Extract the facts</div><div class="step-detail">Amount, parties, dates, pulled from your words — shown back to you to confirm.</div></div>
+    <div class="step"><span class="num">02</span><div class="step-label">Check eligibility</div><div class="step-detail">Against CCP §116.221, retrieved live — not a number we memorized.</div></div>
+    <div class="step"><span class="num">03</span><div class="step-label">Draft the real form</div><div class="step-detail">Populates the actual SC-100, not a document that just looks official.</div></div>
+    <div class="step"><span class="num">04</span><div class="step-label">Self-verify</div><div class="step-detail">A second pass checks every claim against your words and the statute.</div></div>
+    <div class="step"><span class="num">05</span><div class="step-label">You download it</div><div class="step-detail">Filled PDF plus a report showing the source for every line.</div></div>
+  </div>
+
+  <div class="trust-strip">
+    <span class="icon">i</span>
+    <p>This isn't a lawyer and isn't legal advice. It's a way to check your facts against the real rule before you spend a filing fee. <a href="#">See how the grounding check works →</a></p>
+  </div>
+</section>
+
+<!-- ================= SCREEN 2 ================= -->
+<section id="screen-workspace">
+  <div class="result-head">
+    <div>
+      <h1 class="result-title">Your filing, checked line by line</h1>
+      <p class="result-sub">Every fact below is traced to something you said or to the retrieved statute and form text — not generated from memory.</p>
+    </div>
+    <div style="display:flex; flex-direction:column; align-items:flex-end; gap:12px;">
+      <span class="status-pill"><span class="dot"></span>Eligible — within the $12,500 individual limit</span>
+      <div class="result-actions">
+        <button class="btn btn-ghost" onclick="showScreen('intake')">← Edit my story</button>
+        <button class="btn btn-primary">Download SC-100 (PDF)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="workspace-layout">
+    <aside class="config-panel">
+
+      <div class="config-card">
+        <div class="config-card-head"><span class="label">Claim details</span></div>
+        <div class="config-card-body">
+          <div class="field-row">
+            <div class="fr-label"><span class="tag">1</span> Plaintiff (you)</div>
+            <input type="text" value="Jordan A. Reyes">
+          </div>
+          <div class="field-row">
+            <div class="fr-label"><span class="tag">2</span> Defendant</div>
+            <input type="text" value="Marlin Property Group, LLC">
+          </div>
+          <div class="field-row">
+            <div class="fr-label"><span class="tag">5</span> Amount claimed</div>
+            <input type="text" value="$1,500.00">
+          </div>
+          <div class="field-row">
+            <div class="fr-label"><span class="tag">4</span> Basis for claim</div>
+            <textarea>Landlord failed to return security deposit within 21 days of move-out and gave no itemized statement.</textarea>
+          </div>
+          <button class="btn btn-outline btn-sm" style="margin-top: 4px;">Recheck against sources</button>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <div class="config-card-head"><span class="label">Grounding sources</span><span class="src-meta">3 active</span></div>
+        <div class="config-card-body">
+          <div class="source-row">
+            <div style="flex:1;">
+              <div class="src-name">CCP §116.221</div>
+              <div class="src-meta">leginfo.legislature.ca.gov</div>
+            </div>
+            <span class="badge badge-verified">Built-in</span>
+          </div>
+          <div class="source-row">
+            <div style="flex:1;">
+              <div class="src-name">SC-100 + instructions</div>
+              <div class="src-meta">courts.ca.gov/selfhelp</div>
+            </div>
+            <span class="badge badge-verified">Built-in</span>
+          </div>
+          <div class="source-row">
+            <div style="flex:1;">
+              <div class="src-name">Civ. Code §1950.5(g)</div>
+              <div class="src-meta">leginfo.legislature.ca.gov</div>
+            </div>
+            <span class="badge badge-verified">Built-in</span>
+          </div>
+
+          <details class="add-jurisdiction" style="margin-top: 12px; border-top: 1px solid var(--line); padding-top: 12px;">
+            <summary>Add jurisdiction knowledge</summary>
+            <div class="add-jurisdiction-body">
+              <p>Filing outside California? Generate a research prompt, run it in Claude or ChatGPT, then paste the answer back here as a source. We'll flag it as unverified and cite it separately from the built-in California sources.</p>
+              <button class="btn btn-outline btn-sm" style="margin-bottom:10px;">Generate research prompt</button>
+              <div class="prompt-box">Find the current small-claims dollar limit and the official plaintiff's-claim form for [STATE]. Cite the statute section and the form name/number directly, with source URLs. Return it as: (1) dollar limit + statute citation, (2) form name/number + issuing body + URL, (3) any mandatory pre-filing steps.</div>
+              <div class="field-row" style="margin-bottom:8px;">
+                <textarea placeholder="Paste the AI's response here…" style="min-height:72px;"></textarea>
+              </div>
+              <button class="btn btn-primary btn-sm">Add as source</button>
+            </div>
+          </details>
+        </div>
+      </div>
+
+    </aside>
+
+    <div>
+    <div class="panel">
+      <div class="panel-head"><span class="label">Filled form preview</span><span class="label">SC-100</span></div>
+      <div class="form-doc">
+        <div class="form-doc-top">
+          <div class="title">Plaintiff's Claim and ORDER to Go to Small Claims Court</div>
+          <div class="code">Judicial Council of California<br>Form SC-100</div>
+        </div>
+
+        <div class="form-field">
+          <div class="fl">1. Plaintiff (you) <span class="tag">1</span></div>
+          <div class="fv">Jordan A. Reyes</div>
+        </div>
+        <div class="form-field">
+          <div class="fl">2. Defendant <span class="tag">2</span></div>
+          <div class="fv">Marlin Property Group, LLC</div>
+        </div>
+        <div class="form-field">
+          <div class="fl">4a. Reason claim is filed at this courthouse <span class="tag">3</span></div>
+          <div class="fv">Defendant's business is in this county</div>
+        </div>
+        <div class="form-field">
+          <div class="fl">5. Why does defendant owe you money? <span class="tag">4</span></div>
+          <div class="fv" style="font-size:14.5px; line-height:1.6;">Defendant failed to return my $1,500 security deposit within 21 days of move-out as required, and did not provide an itemized statement of deductions.</div>
+        </div>
+
+        <div class="form-checkbox-row">
+          <div class="form-checkbox checked"><span class="box"></span>Demand made</div>
+          <div class="form-checkbox checked"><span class="box"></span>21-day period passed</div>
+          <div class="form-checkbox"><span class="box"></span>Itemization received</div>
+        </div>
+
+        <div class="form-amount">
+          <span style="font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); font-family: var(--sans);">Amount claimed <span class="tag">5</span></span>
+          <span class="amt">$1,500.00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head"><span class="label">Grounding report</span><span class="label">5 claims checked</span></div>
+      <ul class="report-list">
+        <li class="report-item">
+          <span class="tag">1</span>
+          <div class="report-body">
+            <div class="report-claim">Plaintiff name matches what you entered.</div>
+            <div class="report-source">Source: <span class="src-link">your intake text</span>, sentence 1</div>
+          </div>
+        </li>
+        <li class="report-item">
+          <span class="tag">2</span>
+          <div class="report-body">
+            <div class="report-claim">Defendant identified as your former landlord's registered business name.</div>
+            <div class="report-source">Source: <span class="src-link">your intake text</span> + county business lookup</div>
+          </div>
+        </li>
+        <li class="report-item">
+          <span class="tag">4</span>
+          <div class="report-body">
+            <div class="report-claim">21-day return deadline applied to this claim.</div>
+            <div class="report-source">Source: <span class="src-link">Civ. Code §1950.5(g)(1)</span></div>
+            <div class="report-quote">"...the landlord shall furnish the tenant a copy of an itemized statement... within 21 calendar days..."</div>
+          </div>
+        </li>
+        <li class="report-item">
+          <span class="tag">5</span>
+          <div class="report-body">
+            <div class="report-claim">$1,500 claim confirmed within the individual small-claims limit.</div>
+            <div class="report-source">Source: <span class="src-link">CCP §116.221</span> — individual limit $12,500</div>
+            <div class="report-quote">"...the small claims court has jurisdiction in... claim[s]... [that do] not exceed twelve thousand five hundred dollars..."</div>
+          </div>
+        </li>
+        <li class="report-item">
+          <span class="tag">✓</span>
+          <div class="report-body">
+            <div class="report-claim">Self-verification pass: no claim above was unsupported by intake text or retrieved source.</div>
+            <div class="report-source">Checked against: <span class="src-link">original intake</span> + <span class="src-link">2 statute sections</span></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </div>
+    </div>
+  </div>
+</section>
+
+<footer class="strip">
+  <span>Recourse — built for LexHack 2026</span>
+  <span>UI concept, v1 — not connected to live data</span>
+</footer>
+
+</main>
+
+<script>
+function showScreen(which) {
+  ['landing', 'intake', 'workspace'].forEach(function (name) {
+    document.getElementById('screen-' + name).style.display = name === which ? 'block' : 'none';
+    document.getElementById('tab-' + name).setAttribute('aria-pressed', name === which);
+  });
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+</script>
+
+</body>
+</html>
