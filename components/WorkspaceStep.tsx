@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import type { ClaimFacts, GroundingSource } from "@/lib/types";
+import { useMemo, useState } from "react";
+import type { ClaimFacts, Eligibility, GroundingSource } from "@/lib/types";
 import { EXAMPLE_REPORT } from "@/lib/mock-data";
+import { CCP_116_221 } from "@/lib/grounding/ccp-116-221";
+import { buildEligibilityReportItem, currency } from "@/lib/report";
 import ConfigPanel from "./ConfigPanel";
 import FormPreview from "./FormPreview";
 import GroundingReport from "./GroundingReport";
@@ -27,9 +29,34 @@ export default function WorkspaceStep({
   function toggleSource(id: string) {
     setCustomSources((prev) => prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s)));
   }
+
+  // Eligibility is derived live from the editable amount field, checked
+  // against the retrieved CCP §116.221 text — recomputes as soon as the
+  // claim details are edited, so "Recheck against sources" is redundant
+  // for this one fact (kept as a no-op affordance for the still-unwired
+  // self-verification pass over the rest of the claim).
+  const eligibility: Eligibility = useMemo(() => {
+    const amountNumber = Number(facts.amount.replace(/[^0-9.]/g, ""));
+    const hasAmount = Number.isFinite(amountNumber) && amountNumber > 0;
+    return {
+      eligible: hasAmount && amountNumber <= CCP_116_221.individualLimit,
+      amountNumber: hasAmount ? amountNumber : null,
+      limit: CCP_116_221.individualLimit,
+      citation: CCP_116_221.citation,
+      sourceUrl: CCP_116_221.sourceUrl,
+      statuteText: CCP_116_221.text,
+    };
+  }, [facts.amount]);
+
+  const reportItems = useMemo(() => {
+    const eligibilityItem = buildEligibilityReportItem(eligibility);
+    return EXAMPLE_REPORT.map((item) => (item.tag === "5" ? eligibilityItem : item));
+  }, [eligibility]);
+
   function recheck() {
-    // Placeholder: wires up to the real eligibility + self-verification
-    // pipeline once fact extraction and the CCP §116.221 lookup are built.
+    // Placeholder: wires up to a real self-verification pass over the rest
+    // of the claim (plaintiff/defendant/basis provenance) once that's built.
+    // Eligibility above is already live — see the comment on `eligibility`.
   }
 
   return (
@@ -43,9 +70,13 @@ export default function WorkspaceStep({
           </p>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 12 }}>
-          <span className="status-pill">
+          <span className={`status-pill ${eligibility.eligible ? "" : "status-ineligible"}`}>
             <span className="dot" />
-            Eligible — within the $12,500 individual limit
+            {eligibility.amountNumber === null
+              ? "Enter an amount to check eligibility"
+              : eligibility.eligible
+                ? `Eligible — within the ${currency.format(eligibility.limit)} individual limit`
+                : `Exceeds the ${currency.format(eligibility.limit)} individual limit`}
           </span>
           <div className="result-actions">
             <button className="btn btn-ghost" type="button" onClick={onBack}>
@@ -59,8 +90,9 @@ export default function WorkspaceStep({
       </div>
 
       <div className="demo-note">
-        Preview data — fact extraction and self-verification aren&rsquo;t wired up yet. The fields
-        below are editable so you can see the intended shape of a real result.
+        Fact extraction and eligibility are live, grounded against {CCP_116_221.citation}. Plaintiff
+        name, courthouse reason, and self-verification of the rest of the claim aren&rsquo;t wired
+        up yet — those fields stay editable in the meantime.
       </div>
 
       <div className="workspace-layout">
@@ -75,7 +107,7 @@ export default function WorkspaceStep({
         />
         <div>
           <FormPreview facts={facts} />
-          <GroundingReport items={EXAMPLE_REPORT} />
+          <GroundingReport items={reportItems} />
         </div>
       </div>
     </main>

@@ -6,10 +6,14 @@ export default function IntakeStep({
   value,
   onChange,
   onSubmit,
+  loading,
+  error,
 }: {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
+  loading: boolean;
+  error: string | null;
 }) {
   return (
     <main>
@@ -51,14 +55,20 @@ export default function IntakeStep({
             <button
               className="btn btn-primary"
               type="button"
-              disabled={value.trim().length === 0}
+              disabled={value.trim().length === 0 || loading}
               onClick={onSubmit}
             >
-              Check my case →
+              {loading ? "Checking against the statute…" : "Check my case →"}
             </button>
           </div>
         </div>
       </div>
+
+      {error && (
+        <div className="demo-note" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
+          {error}
+        </div>
+      )}
 
       <div className="steps">
         <div className="step">

@@ -23,6 +23,15 @@ export type ReportItem = {
   quote?: string;
 };
 
+export type Eligibility = {
+  eligible: boolean;
+  amountNumber: number | null;
+  limit: number;
+  citation: string;
+  sourceUrl: string;
+  statuteText: string;
+};
+
 export const EMPTY_FACTS: ClaimFacts = {
   plaintiff: "",
   defendant: "",

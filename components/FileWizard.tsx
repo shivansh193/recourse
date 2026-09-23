@@ -10,13 +10,29 @@ export default function FileWizard({ startAtWorkspace }: { startAtWorkspace: boo
   const [step, setStep] = useState<"intake" | "workspace">(startAtWorkspace ? "workspace" : "intake");
   const [claimText, setClaimText] = useState("");
   const [facts, setFacts] = useState<ClaimFacts>(startAtWorkspace ? EXAMPLE_FACTS : EMPTY_FACTS);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit() {
-    // Placeholder shape until real fact extraction (Gemini) replaces it —
-    // keeps the user's own words in the basis field, fills the rest with
-    // the example so the workspace demonstrates the intended output.
-    setFacts({ ...EXAMPLE_FACTS, basis: claimText });
-    setStep("workspace");
+  async function handleSubmit() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: claimText }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data?.error || "Something went wrong checking your case.");
+      }
+      setFacts(data.facts as ClaimFacts);
+      setStep("workspace");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong checking your case.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleBack() {
@@ -24,7 +40,15 @@ export default function FileWizard({ startAtWorkspace }: { startAtWorkspace: boo
   }
 
   if (step === "intake") {
-    return <IntakeStep value={claimText} onChange={setClaimText} onSubmit={handleSubmit} />;
+    return (
+      <IntakeStep
+        value={claimText}
+        onChange={setClaimText}
+        onSubmit={handleSubmit}
+        loading={loading}
+        error={error}
+      />
+    );
   }
   return <WorkspaceStep facts={facts} setFacts={setFacts} onBack={handleBack} />;
 }
