@@ -26,6 +26,20 @@ const BG_DIR = path.join(process.cwd(), "lib/grounding/forms/sc100-pages");
 
 const INK = rgb(0.06, 0.1, 0.5);
 
+// Truncates a single line with an ellipsis so it never overruns into the
+// next label on the form (e.g. a long defendant name colliding with the
+// "Phone:" label to its right) — found by testing an intentionally long
+// company name during edge-case hardening.
+function fitText(text: string, font: PDFFont, size: number, maxWidth: number): string {
+  if (font.widthOfTextAtSize(text, size) <= maxWidth) return text;
+  const ellipsis = "…";
+  let result = text;
+  while (result.length > 0 && font.widthOfTextAtSize(result + ellipsis, size) > maxWidth) {
+    result = result.slice(0, -1);
+  }
+  return result + ellipsis;
+}
+
 function wrapText(text: string, font: PDFFont, size: number, maxWidth: number, maxLines: number): string[] {
   const words = text.split(/\s+/).filter(Boolean);
   const lines: string[] = [];
@@ -63,18 +77,20 @@ export async function fillSc100Pdf(facts: ClaimFacts): Promise<Uint8Array> {
 
   const captionName = facts.plaintiff || "";
   if (captionName) {
-    page2.drawText(captionName, { x: 145, y: 747, size: 9, font, color: INK });
-    page3.drawText(captionName, { x: 145, y: 747, size: 9, font, color: INK });
+    const fitted = fitText(captionName, font, 9, 240);
+    page2.drawText(fitted, { x: 145, y: 747, size: 9, font, color: INK });
+    page3.drawText(fitted, { x: 145, y: 747, size: 9, font, color: INK });
   }
 
   if (facts.plaintiff) {
-    page2.drawText(facts.plaintiff, { x: 98, y: 677, size: 10, font, color: INK });
+    page2.drawText(fitText(facts.plaintiff, font, 10, 275), { x: 98, y: 677, size: 10, font, color: INK });
   }
   if (facts.defendant) {
-    page2.drawText(facts.defendant, { x: 98, y: 392, size: 10, font, color: INK });
+    page2.drawText(fitText(facts.defendant, font, 10, 275), { x: 98, y: 392, size: 10, font, color: INK });
   }
   if (facts.amount) {
-    page2.drawText(facts.amount.replace(/^\$/, ""), { x: 310, y: 197, size: 10, font, color: INK });
+    const amountValue = fitText(facts.amount.replace(/^\$/, ""), font, 10, 85);
+    page2.drawText(amountValue, { x: 310, y: 197, size: 10, font, color: INK });
   }
   if (facts.basis) {
     const lines = wrapText(facts.basis, font, 9.5, 520, 6);

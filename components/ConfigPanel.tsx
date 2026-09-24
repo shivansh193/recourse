@@ -23,20 +23,41 @@ export default function ConfigPanel({
 }) {
   const [promptOpen, setPromptOpen] = useState(false);
   const [pasted, setPasted] = useState("");
+  const [parsing, setParsing] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
 
   function field(key: keyof ClaimFacts, value: string) {
     onFactsChange({ ...facts, [key]: value });
   }
 
-  function handleAddSource() {
-    if (!pasted.trim()) return;
-    onAddSource({
-      id: `custom-${Date.now()}`,
-      name: pasted.trim().slice(0, 48) + (pasted.trim().length > 48 ? "…" : ""),
-      meta: "Pasted from external AI — not verified by Recourse",
-      verified: false,
-    });
-    setPasted("");
+  async function handleAddSource() {
+    const text = pasted.trim();
+    if (!text) return;
+    setParsing(true);
+    setParseError(null);
+    try {
+      const res = await fetch("/api/parse-source", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error || "Couldn't read that source.");
+      const parsed = data.parsed as { limit: number | null; citation: string; formName: string };
+
+      const name = parsed.formName || parsed.citation || text.slice(0, 48) + (text.length > 48 ? "…" : "");
+      const meta =
+        parsed.limit !== null
+          ? `Limit $${parsed.limit.toLocaleString()}${parsed.citation ? ` — ${parsed.citation}` : ""} — unverified`
+          : "No dollar limit found in pasted text — unverified";
+
+      onAddSource({ id: `custom-${Date.now()}`, name, meta, verified: false, parsed });
+      setPasted("");
+    } catch (err) {
+      setParseError(err instanceof Error ? err.message : "Couldn't read that source.");
+    } finally {
+      setParsing(false);
+    }
   }
 
   return (
@@ -149,9 +170,17 @@ export default function ConfigPanel({
                   onChange={(e) => setPasted(e.target.value)}
                 />
               </div>
-              <button className="btn btn-primary btn-sm" type="button" onClick={handleAddSource} disabled={!pasted.trim()}>
-                Add as source
+              <button
+                className="btn btn-primary btn-sm"
+                type="button"
+                onClick={handleAddSource}
+                disabled={!pasted.trim() || parsing}
+              >
+                {parsing ? "Reading source…" : "Add as source"}
               </button>
+              {parseError && (
+                <p style={{ color: "var(--danger)", marginTop: 8, marginBottom: 0 }}>{parseError}</p>
+              )}
             </div>
           </details>
         </div>

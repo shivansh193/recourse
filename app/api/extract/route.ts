@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { extractClaimFacts } from "@/lib/gemini";
-import { CCP_116_221 } from "@/lib/grounding/ccp-116-221";
-import type { ClaimFacts, Eligibility } from "@/lib/types";
+import type { ClaimFacts } from "@/lib/types";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -28,9 +27,6 @@ export async function POST(request: Request) {
     );
   }
 
-  const amountNumber = Number(extracted.amount.replace(/[^0-9.]/g, ""));
-  const hasAmount = Number.isFinite(amountNumber) && amountNumber > 0;
-
   const facts: ClaimFacts = {
     plaintiff: "",
     defendant: extracted.defendant,
@@ -42,14 +38,8 @@ export async function POST(request: Request) {
     itemizationReceived: extracted.itemizationReceived,
   };
 
-  const eligibility: Eligibility = {
-    eligible: hasAmount && amountNumber <= CCP_116_221.individualLimit,
-    amountNumber: hasAmount ? amountNumber : null,
-    limit: CCP_116_221.individualLimit,
-    citation: CCP_116_221.citation,
-    sourceUrl: CCP_116_221.sourceUrl,
-    statuteText: CCP_116_221.text,
-  };
-
-  return NextResponse.json({ facts, eligibility });
+  // Eligibility is computed client-side in WorkspaceStep, live against the
+  // editable amount field (and any active pasted jurisdiction source) —
+  // not duplicated here.
+  return NextResponse.json({ facts });
 }

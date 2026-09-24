@@ -35,11 +35,33 @@ export default function WorkspaceStep({
     setCustomSources((prev) => prev.map((s) => (s.id === id ? { ...s, active: !s.active } : s)));
   }
 
-  // Eligibility is derived live from the editable amount field, checked
-  // against the retrieved CCP §116.221 text.
+  // Eligibility is derived live from the editable amount field. By default
+  // it's checked against the retrieved CCP §116.221 text. If the user has
+  // an active pasted jurisdiction source with a parsed dollar limit, that
+  // takes over instead — clearly marked unverified, since it wasn't
+  // retrieved from an authoritative source the way CCP §116.221 was.
+  const activeCustomLimit = useMemo(() => {
+    const withLimit = customSources.filter((s) => s.active && s.parsed?.limit != null);
+    return withLimit.length > 0 ? withLimit[withLimit.length - 1] : null;
+  }, [customSources]);
+
   const eligibility: Eligibility = useMemo(() => {
     const amountNumber = Number(facts.amount.replace(/[^0-9.]/g, ""));
     const hasAmount = Number.isFinite(amountNumber) && amountNumber > 0;
+
+    if (activeCustomLimit?.parsed?.limit != null) {
+      const limit = activeCustomLimit.parsed.limit;
+      return {
+        eligible: hasAmount && amountNumber <= limit,
+        amountNumber: hasAmount ? amountNumber : null,
+        limit,
+        citation: activeCustomLimit.parsed.citation || activeCustomLimit.name,
+        sourceUrl: "",
+        statuteText: "",
+        verified: false,
+      };
+    }
+
     return {
       eligible: hasAmount && amountNumber <= CCP_116_221.individualLimit,
       amountNumber: hasAmount ? amountNumber : null,
@@ -47,8 +69,9 @@ export default function WorkspaceStep({
       citation: CCP_116_221.citation,
       sourceUrl: CCP_116_221.sourceUrl,
       statuteText: CCP_116_221.text,
+      verified: true,
     };
-  }, [facts.amount]);
+  }, [facts.amount, activeCustomLimit]);
 
   // Guards against an earlier, slower request (e.g. the initial
   // verification-on-arrival call) resolving after a later one — like a
@@ -143,6 +166,7 @@ export default function WorkspaceStep({
               : eligibility.eligible
                 ? `Eligible — within the ${currency.format(eligibility.limit)} individual limit`
                 : `Exceeds the ${currency.format(eligibility.limit)} individual limit`}
+            {!eligibility.verified && " (unverified source)"}
           </span>
           <div className="result-actions">
             <button className="btn btn-ghost" type="button" onClick={onBack}>

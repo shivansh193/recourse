@@ -2,19 +2,25 @@ import type { Eligibility, ReportItem, VerificationField, VerificationResult } f
 
 export const currency = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
-// The eligibility line: computed in code against the retrieved statute
-// text, not asserted by the model.
+// The eligibility line: computed in code against a retrieved dollar
+// limit — CCP §116.221 by default, or an active pasted jurisdiction
+// source if the user added one. `supported` mirrors `verified` here so an
+// unverified pasted-source result gets the same visual flag as an
+// unsupported self-verification claim, rather than reading as confirmed.
 export function buildEligibilityReportItem(eligibility: Eligibility): ReportItem {
   const amountText =
     eligibility.amountNumber !== null ? currency.format(eligibility.amountNumber) : "the claimed amount";
 
   return {
     tag: "5",
-    claim: eligibility.eligible
-      ? `${amountText} claim confirmed within the individual small-claims limit.`
-      : `${amountText} claim exceeds the individual small-claims limit of ${currency.format(eligibility.limit)}.`,
+    claim:
+      (eligibility.eligible
+        ? `${amountText} claim confirmed within the individual small-claims limit.`
+        : `${amountText} claim exceeds the individual small-claims limit of ${currency.format(eligibility.limit)}.`) +
+      (eligibility.verified ? "" : " (from an unverified pasted source — not independently confirmed)"),
     source: `Source: ${eligibility.citation} — individual limit ${currency.format(eligibility.limit)}`,
-    quote: `"${eligibility.statuteText}"`,
+    quote: eligibility.statuteText ? `"${eligibility.statuteText}"` : undefined,
+    supported: eligibility.verified ? undefined : false,
   };
 }
 

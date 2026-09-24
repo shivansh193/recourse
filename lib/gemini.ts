@@ -140,6 +140,45 @@ export async function verifyClaimFacts(
   return parsed.results;
 }
 
+const JURISDICTION_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    limit: {
+      type: "number",
+      nullable: true,
+      description:
+        "The small-claims dollar limit for an individual plaintiff stated in the text, as a plain number " +
+        "(e.g. 20000 for $20,000). Null if no specific dollar figure is stated.",
+    },
+    citation: {
+      type: "string",
+      description: "The statute section cited for the dollar limit, exactly as given. Empty string if none given.",
+    },
+    formName: {
+      type: "string",
+      description: "The form name/number cited for filing, exactly as given. Empty string if none given.",
+    },
+  },
+  required: ["limit", "citation", "formName"],
+};
+
+export type ParsedJurisdictionSource = {
+  limit: number | null;
+  citation: string;
+  formName: string;
+};
+
+export async function parseJurisdictionSource(rawText: string): Promise<ParsedJurisdictionSource> {
+  const prompt =
+    "The text below is research (from an external AI, unverified) about another state's small-claims " +
+    "dollar limit and filing form. Extract only what's explicitly stated — do not fill in a number from " +
+    "general knowledge if the text itself doesn't state one.\n\n" +
+    "Text:\n\"\"\"\n" + rawText + "\n\"\"\"";
+
+  const text = await callGemini(prompt, JURISDICTION_RESPONSE_SCHEMA);
+  return JSON.parse(text) as ParsedJurisdictionSource;
+}
+
 export async function extractClaimFacts(intakeText: string): Promise<ExtractedFacts> {
   const prompt =
     "You are extracting structured facts for a California small claims security-deposit " +

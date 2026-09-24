@@ -9,11 +9,18 @@ export type ClaimFacts = {
   itemizationReceived: boolean;
 };
 
+export type ParsedJurisdiction = {
+  limit: number | null;
+  citation: string;
+  formName: string;
+};
+
 export type GroundingSource = {
   id: string;
   name: string;
   meta: string;
   verified: boolean;
+  parsed?: ParsedJurisdiction;
 };
 
 export type ReportItem = {
@@ -31,6 +38,7 @@ export type Eligibility = {
   citation: string;
   sourceUrl: string;
   statuteText: string;
+  verified: boolean;
 };
 
 export type VerificationField = "defendant" | "basis" | "demandMade" | "periodPassed" | "itemizationReceived";
