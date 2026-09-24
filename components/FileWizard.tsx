@@ -3,7 +3,7 @@
 import { useState } from "react";
 import IntakeStep from "./IntakeStep";
 import WorkspaceStep from "./WorkspaceStep";
-import { EMPTY_FACTS, type ClaimFacts } from "@/lib/types";
+import { EMPTY_FACTS, type ClaimFacts, type ScreeningResult } from "@/lib/types";
 import { EXAMPLE_FACTS, EXAMPLE_INTAKE_TEXT } from "@/lib/mock-data";
 
 export default function FileWizard({ startAtWorkspace }: { startAtWorkspace: boolean }) {
@@ -12,10 +12,12 @@ export default function FileWizard({ startAtWorkspace }: { startAtWorkspace: boo
   const [facts, setFacts] = useState<ClaimFacts>(startAtWorkspace ? EXAMPLE_FACTS : EMPTY_FACTS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [screeningWarning, setScreeningWarning] = useState<ScreeningResult | null>(null);
 
   async function handleSubmit() {
     setLoading(true);
     setError(null);
+    setScreeningWarning(null);
     try {
       const res = await fetch("/api/extract", {
         method: "POST",
@@ -26,8 +28,17 @@ export default function FileWizard({ startAtWorkspace }: { startAtWorkspace: boo
       if (!res.ok) {
         throw new Error(data?.error || "Something went wrong checking your case.");
       }
+      const screening = data.screening as ScreeningResult;
       setFacts(data.facts as ClaimFacts);
-      setStep("workspace");
+      if (!screening.isSecurityDepositClaim) {
+        // Small claims is designed for a civil money dispute, not something
+        // with housing or safety stakes — don't walk someone with an active
+        // eviction or a safety issue into a tool that isn't built for it.
+        // The screen can be wrong, so this warns rather than hard-blocks.
+        setScreeningWarning(screening);
+      } else {
+        setStep("workspace");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong checking your case.");
     } finally {
@@ -39,6 +50,11 @@ export default function FileWizard({ startAtWorkspace }: { startAtWorkspace: boo
     setStep("intake");
   }
 
+  function handleContinueAnyway() {
+    setScreeningWarning(null);
+    setStep("workspace");
+  }
+
   if (step === "intake") {
     return (
       <IntakeStep
@@ -47,6 +63,9 @@ export default function FileWizard({ startAtWorkspace }: { startAtWorkspace: boo
         onSubmit={handleSubmit}
         loading={loading}
         error={error}
+        screeningWarning={screeningWarning}
+        onContinueAnyway={handleContinueAnyway}
+        onDismissWarning={() => setScreeningWarning(null)}
       />
     );
   }

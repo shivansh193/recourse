@@ -68,7 +68,7 @@ export default function Home() {
             <span className="tag">5</span> Amount claimed: $1,500.00
           </div>
           <div className="demo-line" style={{ borderBottom: "none", marginBottom: 0 }}>
-            <span className="tag">4</span> Basis: 21-day return deadline, Civ. Code §1950.5(g)(1)
+            <span className="tag">4</span> Basis: 21-day return deadline, Civ. Code §1950.5(h)(1)
           </div>
         </div>
       </div>

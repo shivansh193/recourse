@@ -1,5 +1,7 @@
 "use client";
 
+import type { ScreeningResult } from "@/lib/types";
+
 const MAX_LEN = 2000;
 
 export default function IntakeStep({
@@ -8,12 +10,18 @@ export default function IntakeStep({
   onSubmit,
   loading,
   error,
+  screeningWarning,
+  onContinueAnyway,
+  onDismissWarning,
 }: {
   value: string;
   onChange: (value: string) => void;
   onSubmit: () => void;
   loading: boolean;
   error: string | null;
+  screeningWarning: ScreeningResult | null;
+  onContinueAnyway: () => void;
+  onDismissWarning: () => void;
 }) {
   return (
     <main>
@@ -64,6 +72,64 @@ export default function IntakeStep({
       {error && (
         <div className="demo-note" style={{ borderColor: "var(--danger)", color: "var(--danger)" }}>
           {error}
+        </div>
+      )}
+
+      {screeningWarning && (
+        <div
+          className="trust-strip"
+          style={
+            screeningWarning.higherStakesFlag
+              ? { background: "var(--danger-soft)", borderColor: "var(--danger)" }
+              : { background: "var(--seal-soft)", borderColor: "var(--seal-line)" }
+          }
+        >
+          <span
+            className="icon"
+            style={
+              screeningWarning.higherStakesFlag
+                ? { borderColor: "var(--danger)", color: "var(--danger)" }
+                : { borderColor: "var(--seal)", color: "var(--seal)" }
+            }
+          >
+            !
+          </span>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontWeight: 600, marginBottom: 4 }}>
+              {screeningWarning.higherStakesFlag
+                ? "This may need more than a small claims form."
+                : "This doesn't look like a security deposit dispute."}
+            </p>
+            <p>{screeningWarning.note} This tool only checks security deposit claims against the real statute — for anything else, the grounding it does won&rsquo;t apply.</p>
+            {screeningWarning.higherStakesFlag && (
+              <p style={{ marginTop: 6 }}>
+                If this involves an active eviction, being locked out, or your safety, consider{" "}
+                <a href="https://courts.ca.gov/selfhelp" target="_blank" rel="noreferrer">
+                  courts.ca.gov/selfhelp
+                </a>{" "}
+                or a local legal aid organization instead — they can help with situations this tool
+                isn&rsquo;t built for.
+              </p>
+            )}
+            <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+              <button
+                className="btn btn-ghost"
+                type="button"
+                onClick={onDismissWarning}
+                style={{ width: "auto", fontSize: 13, padding: "8px 14px" }}
+              >
+                Edit my description
+              </button>
+              <button
+                className="btn btn-outline"
+                type="button"
+                onClick={onContinueAnyway}
+                style={{ width: "auto", fontSize: 13, padding: "8px 14px" }}
+              >
+                This is a deposit dispute — continue anyway
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

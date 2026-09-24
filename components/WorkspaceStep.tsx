@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ClaimFacts, Eligibility, GroundingSource, ReportItem, VerificationResult } from "@/lib/types";
 import { CCP_116_221 } from "@/lib/grounding/ccp-116-221";
+import { calculateFilingFee } from "@/lib/grounding/ccp-116-230";
 import { buildEligibilityReportItem, buildSummaryReportItem, buildVerificationReportItems, currency } from "@/lib/report";
 import ConfigPanel from "./ConfigPanel";
 import FormPreview from "./FormPreview";
@@ -25,6 +26,8 @@ export default function WorkspaceStep({
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloadingReport, setDownloadingReport] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   function addSource(source: GroundingSource) {
     setCustomSources((prev) => [...prev, { ...source, active: true }]);
@@ -73,6 +76,11 @@ export default function WorkspaceStep({
       verified: true,
     };
   }, [facts.amount, activeCustomLimit]);
+
+  const filingFee = useMemo(() => {
+    if (eligibility.amountNumber === null) return null;
+    return calculateFilingFee(eligibility.amountNumber);
+  }, [eligibility.amountNumber]);
 
   // Guards against an earlier, slower request (e.g. the initial
   // verification-on-arrival call) resolving after a later one — like a
@@ -160,6 +168,35 @@ export default function WorkspaceStep({
     }
   }
 
+  async function handleDownloadReport() {
+    setDownloadingReport(true);
+    setReportError(null);
+    try {
+      const res = await fetch("/api/generate-report-pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ facts, eligibility, filingFee, reportItems }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Report generation failed. Try again.");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "recourse-grounding-report.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setReportError(err instanceof Error ? err.message : "Report generation failed. Try again.");
+    } finally {
+      setDownloadingReport(false);
+    }
+  }
+
   return (
     <main>
       <div className="result-head">
@@ -180,12 +217,26 @@ export default function WorkspaceStep({
                 : `Exceeds the ${currency.format(eligibility.limit)} individual limit`}
             {!eligibility.verified && " (unverified source)"}
           </span>
+          {filingFee && (
+            <span style={{ fontSize: 12, color: "var(--ink-faint)" }}>
+              Filing fee: {currency.format(filingFee.fee)} (CCP §116.230, claims {filingFee.tierLabel})
+            </span>
+          )}
           <div className="result-actions">
             <button className="btn btn-ghost" type="button" onClick={onBack}>
               ← Edit my story
             </button>
             <button className="btn btn-primary" type="button" onClick={handleDownload} disabled={downloading}>
               {downloading ? "Preparing PDF…" : "Download SC-100 (PDF)"}
+            </button>
+            <button
+              className="btn btn-ghost"
+              type="button"
+              onClick={handleDownloadReport}
+              disabled={downloadingReport}
+              title="A standalone copy of the grounding report below, for review without opening the app"
+            >
+              {downloadingReport ? "Preparing…" : "Download grounding report"}
             </button>
             {verification === null && !verifying && (
               <span style={{ fontSize: 11, color: "var(--ink-faint)", maxWidth: 220, textAlign: "right" }}>
@@ -210,6 +261,12 @@ export default function WorkspaceStep({
           <>
             {" "}
             <span style={{ color: "var(--danger)" }}>{downloadError}</span>
+          </>
+        )}
+        {reportError && (
+          <>
+            {" "}
+            <span style={{ color: "var(--danger)" }}>{reportError}</span>
           </>
         )}
       </div>

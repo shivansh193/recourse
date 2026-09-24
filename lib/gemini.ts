@@ -1,4 +1,5 @@
 import type { VerificationResult } from "./types";
+import { CIV_1950_5_H } from "./grounding/civ-1950-5-h";
 
 // gemini-3.5-flash-lite is tried as a fallback when the primary model
 // returns 503 (observed in practice: gemini-3.8-flash intermittently
@@ -48,6 +49,9 @@ export type ExtractedFacts = {
   demandMade: boolean;
   periodPassed: boolean;
   itemizationReceived: boolean;
+  isSecurityDepositClaim: boolean;
+  screeningNote: string;
+  higherStakesFlag: boolean;
 };
 
 const RESPONSE_SCHEMA = {
@@ -83,8 +87,40 @@ const RESPONSE_SCHEMA = {
       description:
         "True only if the text explicitly states the landlord provided an itemized statement of deductions.",
     },
+    isSecurityDepositClaim: {
+      type: "boolean",
+      description:
+        "True only if this is genuinely about a landlord keeping/withholding a rental security deposit. " +
+        "False for anything else — an active eviction, being locked out, harassment, habitability/repair " +
+        "issues, a roommate dispute, a non-rental contract dispute, personal injury, etc. — even if a " +
+        "deposit is mentioned in passing.",
+    },
+    higherStakesFlag: {
+      type: "boolean",
+      description:
+        "True if the text describes something with real safety or housing stakes that a money-claim tool " +
+        "isn't appropriate for — active eviction, lockout, restraining-order-worthy harassment or threats, " +
+        "domestic violence, habitability emergencies (no heat/water, unsafe conditions). False otherwise.",
+    },
+    screeningNote: {
+      type: "string",
+      description:
+        "If isSecurityDepositClaim is false, one short plain sentence describing what this actually sounds " +
+        "like instead (e.g. 'This describes an active eviction, not a security deposit dispute.'). Empty " +
+        "string if isSecurityDepositClaim is true.",
+    },
   },
-  required: ["defendant", "amount", "basis", "demandMade", "periodPassed", "itemizationReceived"],
+  required: [
+    "defendant",
+    "amount",
+    "basis",
+    "demandMade",
+    "periodPassed",
+    "itemizationReceived",
+    "isSecurityDepositClaim",
+    "higherStakesFlag",
+    "screeningNote",
+  ],
 };
 
 const VERIFY_RESPONSE_SCHEMA = {
@@ -127,12 +163,15 @@ export async function verifyClaimFacts(
     "original text actually supports it. Be strict: a fact counts as unsupported if it was inferred beyond " +
     "what the text says, not just if it's flatly contradicted.\n\n" +
     "Original text:\n\"\"\"\n" + intakeText + "\n\"\"\"\n\n" +
+    `Relevant statute (${CIV_1950_5_H.citation}), for checking periodPassed and itemizationReceived — ` +
+    "the 21-day figure in those two facts comes from this law, not from memory:\n\"\"\"\n" +
+    CIV_1950_5_H.text + "\n\"\"\"\n\n" +
     "Drafted facts to check:\n" +
     `- defendant: "${facts.defendant}"\n` +
     `- basis: "${facts.basis}"\n` +
     `- demandMade (tenant asked the landlord for the deposit back before suing): ${facts.demandMade}\n` +
-    `- periodPassed (more than 21 days have passed since move-out): ${facts.periodPassed}\n` +
-    `- itemizationReceived (landlord provided an itemized statement of deductions): ${facts.itemizationReceived}\n\n` +
+    `- periodPassed (more than 21 days have passed since move-out, per the statute above): ${facts.periodPassed}\n` +
+    `- itemizationReceived (landlord provided an itemized statement of deductions, per the statute above): ${facts.itemizationReceived}\n\n` +
     "Return one result per field, in the same order.";
 
   const text = await callGemini(prompt, VERIFY_RESPONSE_SCHEMA);
@@ -185,7 +224,15 @@ export async function extractClaimFacts(intakeText: string): Promise<ExtractedFa
     "petition, from a plain-language description a tenant wrote themselves. Only use facts " +
     "explicitly present in the text below — never invent a name, amount, or date that isn't " +
     "stated. If something isn't mentioned, use an empty string for text fields or false for " +
-    "booleans.\n\nTenant's text:\n\"\"\"\n" +
+    "booleans.\n\n" +
+    "Before extracting, also screen what kind of issue this actually is. This tool is scoped " +
+    "narrowly to security-deposit disputes on purpose: small claims court is designed for a civil " +
+    "money dispute, not for something with housing or safety stakes. If the text describes an " +
+    "active eviction, a lockout, harassment or threats, a habitability emergency, or anything else " +
+    "that isn't a landlord withholding a deposit, set isSecurityDepositClaim to false and say what " +
+    "it actually sounds like in screeningNote. Set higherStakesFlag true if it involves real safety " +
+    "or housing risk (not just 'this is a different kind of dispute').\n\n" +
+    "Tenant's text:\n\"\"\"\n" +
     intakeText +
     "\n\"\"\"";
 

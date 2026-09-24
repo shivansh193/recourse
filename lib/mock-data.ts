@@ -21,9 +21,15 @@ export const EXAMPLE_FACTS: ClaimFacts = {
 };
 
 export const BUILT_IN_SOURCES: GroundingSource[] = [
-  { id: "ccp-116-221", name: "CCP §116.221", meta: "leginfo.legislature.ca.gov", verified: true },
+  { id: "ccp-116-221", name: "CCP §116.221", meta: "leginfo.legislature.ca.gov — eligibility limit", verified: true },
+  { id: "ccp-116-230", name: "CCP §116.230", meta: "leginfo.legislature.ca.gov — filing fee", verified: true },
   { id: "sc-100", name: "SC-100 + instructions", meta: "courts.ca.gov/selfhelp", verified: true },
-  { id: "civ-1950-5", name: "Civ. Code §1950.5(g)", meta: "leginfo.legislature.ca.gov", verified: true },
+  {
+    id: "civ-1950-5-h",
+    name: "Civ. Code §1950.5(h)(1)",
+    meta: "leginfo.legislature.ca.gov — 21-day itemization deadline",
+    verified: true,
+  },
 ];
 
 export const RESEARCH_PROMPT =

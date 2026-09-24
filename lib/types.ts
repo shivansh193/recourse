@@ -41,6 +41,12 @@ export type Eligibility = {
   verified: boolean;
 };
 
+export type ScreeningResult = {
+  isSecurityDepositClaim: boolean;
+  higherStakesFlag: boolean;
+  note: string;
+};
+
 export type VerificationField = "defendant" | "basis" | "demandMade" | "periodPassed" | "itemizationReceived";
 
 export type VerificationResult = {

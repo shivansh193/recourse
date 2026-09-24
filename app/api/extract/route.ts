@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { extractClaimFacts } from "@/lib/gemini";
 import { findVerbatimSpan } from "@/lib/text-match";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
-import type { ClaimFacts } from "@/lib/types";
+import type { ClaimFacts, ScreeningResult } from "@/lib/types";
 
 export async function POST(request: Request) {
   const limited = rateLimit(`extract:${clientKey(request)}`, 10, 5 * 60 * 1000);
@@ -53,8 +53,14 @@ export async function POST(request: Request) {
     itemizationReceived: extracted.itemizationReceived,
   };
 
+  const screening: ScreeningResult = {
+    isSecurityDepositClaim: extracted.isSecurityDepositClaim,
+    higherStakesFlag: extracted.higherStakesFlag,
+    note: extracted.screeningNote,
+  };
+
   // Eligibility is computed client-side in WorkspaceStep, live against the
   // editable amount field (and any active pasted jurisdiction source) —
   // not duplicated here.
-  return NextResponse.json({ facts });
+  return NextResponse.json({ facts, screening });
 }
