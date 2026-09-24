@@ -1,5 +1,13 @@
 import type { ClaimFacts } from "@/lib/types";
 
+// Item numbers below match the real SC-100's actual layout (verified
+// directly against the form while building lib/pdf/fill-sc100.ts): 1
+// plaintiff, 2 defendant, 3 amount claimed, 3a basis, 4 demand-made
+// Yes/No, 5 courthouse reason. periodPassed and itemizationReceived
+// aren't separate checkboxes on the real form — they're facts the
+// self-verification pass checks and the basis narrative should reflect,
+// not fields this preview can claim are "on the form," so they're left
+// out of this panel rather than shown as if they were.
 export default function FormPreview({ facts }: { facts: ClaimFacts }) {
   return (
     <div className="panel">
@@ -31,13 +39,13 @@ export default function FormPreview({ facts }: { facts: ClaimFacts }) {
         </div>
         <div className="form-field">
           <div className="fl">
-            4a. Reason claim is filed at this courthouse <span className="tag">3</span>
+            5. Why are you filing at this courthouse? <span className="tag">3</span>
           </div>
           <div className="fv">{facts.courthouseReason || "—"}</div>
         </div>
         <div className="form-field">
           <div className="fl">
-            5. Why does defendant owe you money? <span className="tag">4</span>
+            3a. Why does defendant owe you money? <span className="tag">4</span>
           </div>
           <div className="fv" style={{ fontSize: 14.5, lineHeight: 1.6 }}>
             {facts.basis || "—"}
@@ -47,21 +55,13 @@ export default function FormPreview({ facts }: { facts: ClaimFacts }) {
         <div className="form-checkbox-row">
           <div className={`form-checkbox ${facts.demandMade ? "checked" : ""}`}>
             <span className="box" />
-            Demand made <span className="tag">6</span>
-          </div>
-          <div className={`form-checkbox ${facts.periodPassed ? "checked" : ""}`}>
-            <span className="box" />
-            21-day period passed <span className="tag">7</span>
-          </div>
-          <div className={`form-checkbox ${facts.itemizationReceived ? "checked" : ""}`}>
-            <span className="box" />
-            Itemization received <span className="tag">8</span>
+            4. Asked defendant to pay first <span className="tag">6</span>
           </div>
         </div>
 
         <div className="form-amount">
           <span className="amt-label">
-            Amount claimed <span className="tag">5</span>
+            3. Amount claimed <span className="tag">5</span>
           </span>
           <span className="amt">{facts.amount || "—"}</span>
         </div>

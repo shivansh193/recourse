@@ -1,10 +1,20 @@
 import { NextResponse } from "next/server";
 import { extractClaimFacts } from "@/lib/gemini";
+import { findVerbatimSpan } from "@/lib/text-match";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 import type { ClaimFacts } from "@/lib/types";
 
 export async function POST(request: Request) {
+  const limited = rateLimit(`extract:${clientKey(request)}`, 10, 5 * 60 * 1000);
+  if (!limited.ok) {
+    return NextResponse.json(
+      { error: "Too many requests — wait a moment and try again." },
+      { status: 429 }
+    );
+  }
+
   const body = await request.json().catch(() => null);
-  const text = typeof body?.text === "string" ? body.text.trim() : "";
+  const text = typeof body?.text === "string" ? body.text.trim().slice(0, 2000) : "";
 
   if (!text) {
     return NextResponse.json(
@@ -27,9 +37,14 @@ export async function POST(request: Request) {
     );
   }
 
+  // Gemini can retype a name with a character subtly altered (e.g. an
+  // accented letter swapped for a similar-looking one). Force it back to
+  // the user's own literal words when a close match exists in the source.
+  const defendant = findVerbatimSpan(extracted.defendant, text);
+
   const facts: ClaimFacts = {
     plaintiff: "",
-    defendant: extracted.defendant,
+    defendant,
     courthouseReason: "",
     basis: extracted.basis,
     amount: extracted.amount,

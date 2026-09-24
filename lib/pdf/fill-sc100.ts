@@ -26,6 +26,31 @@ const BG_DIR = path.join(process.cwd(), "lib/grounding/forms/sc100-pages");
 
 const INK = rgb(0.06, 0.1, 0.5);
 
+// Helvetica only supports WinAnsi encoding (covers ASCII plus most
+// Western-European accented letters — à ü ñ ø etc. all work fine). CJK
+// characters and emoji don't, and pdf-lib throws synchronously the moment
+// you measure or draw one, which was crashing PDF generation entirely for
+// any name containing them (found in testing). Replacing just the
+// unencodable characters, rather than rejecting the whole field, keeps as
+// much of the user's actual text as possible on a real, working PDF.
+function sanitizeForFont(text: string, font: PDFFont): string {
+  try {
+    font.widthOfTextAtSize(text, 10);
+    return text;
+  } catch {
+    let out = "";
+    for (const ch of text) {
+      try {
+        font.widthOfTextAtSize(ch, 10);
+        out += ch;
+      } catch {
+        out += "?";
+      }
+    }
+    return out;
+  }
+}
+
 // Truncates a single line with an ellipsis so it never overruns into the
 // next label on the form (e.g. a long defendant name colliding with the
 // "Phone:" label to its right) — found by testing an intentionally long
@@ -75,25 +100,31 @@ export async function fillSc100Pdf(facts: ClaimFacts): Promise<Uint8Array> {
   const page2 = pages[1]; // form "Page 2 of 6" — plaintiff, defendant, amount, basis
   const page3 = pages[2]; // form "Page 3 of 6" — item 4 demand-made Yes/No
 
-  const captionName = facts.plaintiff || "";
+  const plaintiff = sanitizeForFont(facts.plaintiff, font);
+  const defendant = sanitizeForFont(facts.defendant, font);
+  const amount = sanitizeForFont(facts.amount, font);
+  const basis = sanitizeForFont(facts.basis, font);
+  const courthouseReason = sanitizeForFont(facts.courthouseReason, font);
+
+  const captionName = plaintiff || "";
   if (captionName) {
     const fitted = fitText(captionName, font, 9, 240);
     page2.drawText(fitted, { x: 145, y: 747, size: 9, font, color: INK });
     page3.drawText(fitted, { x: 145, y: 747, size: 9, font, color: INK });
   }
 
-  if (facts.plaintiff) {
-    page2.drawText(fitText(facts.plaintiff, font, 10, 275), { x: 98, y: 677, size: 10, font, color: INK });
+  if (plaintiff) {
+    page2.drawText(fitText(plaintiff, font, 10, 275), { x: 98, y: 677, size: 10, font, color: INK });
   }
-  if (facts.defendant) {
-    page2.drawText(fitText(facts.defendant, font, 10, 275), { x: 98, y: 392, size: 10, font, color: INK });
+  if (defendant) {
+    page2.drawText(fitText(defendant, font, 10, 275), { x: 98, y: 392, size: 10, font, color: INK });
   }
-  if (facts.amount) {
-    const amountValue = fitText(facts.amount.replace(/^\$/, ""), font, 10, 85);
+  if (amount) {
+    const amountValue = fitText(amount.replace(/^\$/, ""), font, 10, 85);
     page2.drawText(amountValue, { x: 310, y: 197, size: 10, font, color: INK });
   }
-  if (facts.basis) {
-    const lines = wrapText(facts.basis, font, 9.5, 520, 6);
+  if (basis) {
+    const lines = wrapText(basis, font, 9.5, 520, 6);
     lines.forEach((line, i) => {
       page2.drawText(line, { x: 68, y: 163 - i * 18, size: 9.5, font, color: INK });
     });
@@ -106,6 +137,15 @@ export async function fillSc100Pdf(facts: ClaimFacts): Promise<Uint8Array> {
     page3.drawText("X", { x: 65, y: 489, size: 9, font, color: INK });
   } else if (facts.demandMade === false) {
     page3.drawText("X", { x: 119, y: 489, size: 9, font, color: INK });
+  }
+
+  // Item 5 is a set of lettered checkboxes (a-d) for specific venue rules,
+  // plus "e. Other (specify): ___". We don't determine which specific rule
+  // applies — that's a legal judgment call, not something to guess — so a
+  // free-text courthouse reason goes on the "e. Other" line, with e marked.
+  if (courthouseReason) {
+    page3.drawText("X", { x: 84, y: 220, size: 9, font, color: INK });
+    page3.drawText(fitText(courthouseReason, font, 9.5, 415), { x: 170, y: 220, size: 9.5, font, color: INK });
   }
 
   return doc.save();

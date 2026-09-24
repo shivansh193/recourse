@@ -8,8 +8,19 @@ export const currency = new Intl.NumberFormat("en-US", { style: "currency", curr
 // unverified pasted-source result gets the same visual flag as an
 // unsupported self-verification claim, rather than reading as confirmed.
 export function buildEligibilityReportItem(eligibility: Eligibility): ReportItem {
-  const amountText =
-    eligibility.amountNumber !== null ? currency.format(eligibility.amountNumber) : "the claimed amount";
+  // No amount entered yet isn't the same claim as "exceeds the limit" —
+  // conflating them was a real bug: the report asserted an amount had
+  // exceeded the limit when no amount had even been entered.
+  if (eligibility.amountNumber === null) {
+    return {
+      tag: "5",
+      claim: "No amount entered yet — eligibility can't be checked until you enter one.",
+      source: `Source: ${eligibility.citation} — individual limit ${currency.format(eligibility.limit)}`,
+      quote: eligibility.statuteText ? `"${eligibility.statuteText}"` : undefined,
+    };
+  }
+
+  const amountText = currency.format(eligibility.amountNumber);
 
   return {
     tag: "5",

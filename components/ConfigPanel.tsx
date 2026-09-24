@@ -30,6 +30,10 @@ export default function ConfigPanel({
     onFactsChange({ ...facts, [key]: value });
   }
 
+  function boolField(key: "demandMade" | "periodPassed" | "itemizationReceived", value: boolean) {
+    onFactsChange({ ...facts, [key]: value });
+  }
+
   async function handleAddSource() {
     const text = pasted.trim();
     if (!text) return;
@@ -98,6 +102,43 @@ export default function ConfigPanel({
               <span className="tag">4</span> Basis for claim
             </div>
             <textarea value={facts.basis} onChange={(e) => field("basis", e.target.value)} />
+          </div>
+          <div className="field-row">
+            <div className="fr-label">
+              <span className="tag">3</span> Courthouse reason (item 5 on the form)
+            </div>
+            <input
+              type="text"
+              placeholder="e.g. Defendant's business is in this county"
+              value={facts.courthouseReason}
+              onChange={(e) => field("courthouseReason", e.target.value)}
+            />
+          </div>
+          <div className="field-row" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+              <input
+                type="checkbox"
+                checked={facts.demandMade}
+                onChange={(e) => boolField("demandMade", e.target.checked)}
+              />
+              <span className="tag">6</span> Asked defendant to pay first (item 4)
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+              <input
+                type="checkbox"
+                checked={facts.periodPassed}
+                onChange={(e) => boolField("periodPassed", e.target.checked)}
+              />
+              <span className="tag">7</span> More than 21 days since move-out
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+              <input
+                type="checkbox"
+                checked={facts.itemizationReceived}
+                onChange={(e) => boolField("itemizationReceived", e.target.checked)}
+              />
+              <span className="tag">8</span> Received an itemized statement
+            </label>
           </div>
           <button className="btn btn-outline btn-sm" type="button" onClick={onRecheck} style={{ marginTop: 4 }}>
             Recheck against sources

@@ -24,6 +24,7 @@ export default function WorkspaceStep({
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
 
   function addSource(source: GroundingSource) {
     setCustomSources((prev) => [...prev, { ...source, active: true }]);
@@ -123,14 +124,26 @@ export default function WorkspaceStep({
   }, [eligibility, verification]);
 
   async function handleDownload() {
+    if (eligibility.amountNumber !== null && !eligibility.eligible) {
+      const proceed = window.confirm(
+        `This claim exceeds the ${currency.format(eligibility.limit)} individual small-claims limit. ` +
+          `The court may reject it at this amount. Download the draft anyway?`
+      );
+      if (!proceed) return;
+    }
+
     setDownloading(true);
+    setDownloadError(null);
     try {
       const res = await fetch("/api/generate-pdf", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ facts }),
       });
-      if (!res.ok) throw new Error("PDF generation failed");
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "PDF generation failed. Try again.");
+      }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -140,9 +153,8 @@ export default function WorkspaceStep({
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-    } catch {
-      // Surfaced via the disabled/label state below is enough for now —
-      // a toast/error banner is future polish.
+    } catch (err) {
+      setDownloadError(err instanceof Error ? err.message : "PDF generation failed. Try again.");
     } finally {
       setDownloading(false);
     }
@@ -175,6 +187,11 @@ export default function WorkspaceStep({
             <button className="btn btn-primary" type="button" onClick={handleDownload} disabled={downloading}>
               {downloading ? "Preparing PDF…" : "Download SC-100 (PDF)"}
             </button>
+            {verification === null && !verifying && (
+              <span style={{ fontSize: 11, color: "var(--ink-faint)", maxWidth: 220, textAlign: "right" }}>
+                Self-verification hasn&rsquo;t completed — review the grounding report before filing.
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -187,6 +204,12 @@ export default function WorkspaceStep({
           <>
             {" "}
             <span style={{ color: "var(--danger)" }}>{verifyError}</span>
+          </>
+        )}
+        {downloadError && (
+          <>
+            {" "}
+            <span style={{ color: "var(--danger)" }}>{downloadError}</span>
           </>
         )}
       </div>

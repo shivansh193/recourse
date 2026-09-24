@@ -49,9 +49,6 @@ export default function IntakeStep({
             Nothing is filed or submitted anywhere until you download it yourself.
           </span>
           <div style={{ display: "flex", gap: 10 }}>
-            <button className="btn btn-ghost" type="button" disabled>
-              Save draft
-            </button>
             <button
               className="btn btn-primary"
               type="button"
@@ -79,7 +76,7 @@ export default function IntakeStep({
         <div className="step">
           <span className="num">02</span>
           <div className="step-label">Check eligibility</div>
-          <div className="step-detail">Against CCP §116.221, retrieved live — not a number we memorized.</div>
+          <div className="step-detail">Computed in code against the actual CCP §116.221 text — not asked of the AI.</div>
         </div>
         <div className="step">
           <span className="num">03</span>

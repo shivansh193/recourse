@@ -31,9 +31,9 @@ export default function Home() {
           <div className="pillar-label">01 — Grounded, not remembered</div>
           <h3>Reads the actual statute</h3>
           <p>
-            The $12,500 small-claims limit comes from CCP §116.221, retrieved at the time you
-            file — not recalled from memory, which is exactly where a generic AI gets confidently
-            wrong about the law.
+            The $12,500 small-claims limit comes from the actual text of CCP §116.221, checked in
+            code against what you claim — not asked of the AI, which is exactly where a generic
+            assistant gets confidently wrong about the law.
           </p>
         </div>
         <div className="pillar">
