@@ -47,15 +47,15 @@ export default function FormPreview({ facts }: { facts: ClaimFacts }) {
         <div className="form-checkbox-row">
           <div className={`form-checkbox ${facts.demandMade ? "checked" : ""}`}>
             <span className="box" />
-            Demand made
+            Demand made <span className="tag">6</span>
           </div>
           <div className={`form-checkbox ${facts.periodPassed ? "checked" : ""}`}>
             <span className="box" />
-            21-day period passed
+            21-day period passed <span className="tag">7</span>
           </div>
           <div className={`form-checkbox ${facts.itemizationReceived ? "checked" : ""}`}>
             <span className="box" />
-            Itemization received
+            Itemization received <span className="tag">8</span>
           </div>
         </div>
 

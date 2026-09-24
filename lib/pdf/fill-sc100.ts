@@ -1,0 +1,96 @@
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import type { ClaimFacts } from "@/lib/types";
+
+// The official SC-100 PDF (lib/grounding/forms/sc100.pdf) is an Adobe
+// LiveCycle / XFA-structured, digitally-certified form. pdf-lib cannot
+// reliably parse it: its AcroForm and even some page content objects sit
+// inside object streams that pdf-lib's recovery logic drops silently on
+// load, so a load-then-save round trip on that file comes back with blank
+// pages (verified directly with pdfjs-dist during development — 0 text
+// items survive the round trip). Rendering it to page images with mupdf
+// (scripts/generate-sc100-backgrounds.mjs, a one-time build step) and then
+// building a *fresh* pdf-lib document with those images as page
+// backgrounds sidesteps the parser entirely, so the output is a normal,
+// valid PDF that any viewer can open — the visible form is the real,
+// current (Rev. January 1, 2026) Judicial Council SC-100, not a lookalike.
+//
+// Coordinates below were read directly off the real form's text layer via
+// pdfjs-dist (not eyeballed), so each value lands on its actual line.
+
+const PAGE_COUNT = 6;
+const PAGE_WIDTH = 612;
+const PAGE_HEIGHT = 792;
+const BG_DIR = path.join(process.cwd(), "lib/grounding/forms/sc100-pages");
+
+const INK = rgb(0.06, 0.1, 0.5);
+
+function wrapText(text: string, font: PDFFont, size: number, maxWidth: number, maxLines: number): string[] {
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let current = "";
+
+  for (const word of words) {
+    const candidate = current ? `${current} ${word}` : word;
+    if (font.widthOfTextAtSize(candidate, size) <= maxWidth) {
+      current = candidate;
+    } else {
+      if (current) lines.push(current);
+      current = word;
+      if (lines.length >= maxLines) break;
+    }
+  }
+  if (current && lines.length < maxLines) lines.push(current);
+  return lines.slice(0, maxLines);
+}
+
+export async function fillSc100Pdf(facts: ClaimFacts): Promise<Uint8Array> {
+  const doc = await PDFDocument.create();
+  const font = await doc.embedFont(StandardFonts.Helvetica);
+
+  const pages: PDFPage[] = [];
+  for (let i = 0; i < PAGE_COUNT; i++) {
+    const pngBytes = await readFile(path.join(BG_DIR, `page-${i}.png`));
+    const img = await doc.embedPng(pngBytes);
+    const page = doc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    page.drawImage(img, { x: 0, y: 0, width: PAGE_WIDTH, height: PAGE_HEIGHT });
+    pages.push(page);
+  }
+
+  const page2 = pages[1]; // form "Page 2 of 6" — plaintiff, defendant, amount, basis
+  const page3 = pages[2]; // form "Page 3 of 6" — item 4 demand-made Yes/No
+
+  const captionName = facts.plaintiff || "";
+  if (captionName) {
+    page2.drawText(captionName, { x: 145, y: 747, size: 9, font, color: INK });
+    page3.drawText(captionName, { x: 145, y: 747, size: 9, font, color: INK });
+  }
+
+  if (facts.plaintiff) {
+    page2.drawText(facts.plaintiff, { x: 98, y: 677, size: 10, font, color: INK });
+  }
+  if (facts.defendant) {
+    page2.drawText(facts.defendant, { x: 98, y: 392, size: 10, font, color: INK });
+  }
+  if (facts.amount) {
+    page2.drawText(facts.amount.replace(/^\$/, ""), { x: 310, y: 197, size: 10, font, color: INK });
+  }
+  if (facts.basis) {
+    const lines = wrapText(facts.basis, font, 9.5, 520, 6);
+    lines.forEach((line, i) => {
+      page2.drawText(line, { x: 68, y: 163 - i * 18, size: 9.5, font, color: INK });
+    });
+  }
+
+  // Item 4: "Have you asked the defendant to pay you before suing?"
+  // demandMade === true -> Yes box; explicitly false -> No box. Left blank
+  // (neither box marked) when unknown, rather than guessing.
+  if (facts.demandMade === true) {
+    page3.drawText("X", { x: 65, y: 489, size: 9, font, color: INK });
+  } else if (facts.demandMade === false) {
+    page3.drawText("X", { x: 119, y: 489, size: 9, font, color: INK });
+  }
+
+  return doc.save();
+}

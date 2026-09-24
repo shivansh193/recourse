@@ -21,6 +21,7 @@ export type ReportItem = {
   claim: string;
   source: string;
   quote?: string;
+  supported?: boolean;
 };
 
 export type Eligibility = {
@@ -30,6 +31,14 @@ export type Eligibility = {
   citation: string;
   sourceUrl: string;
   statuteText: string;
+};
+
+export type VerificationField = "defendant" | "basis" | "demandMade" | "periodPassed" | "itemizationReceived";
+
+export type VerificationResult = {
+  field: VerificationField;
+  supported: boolean;
+  note: string;
 };
 
 export const EMPTY_FACTS: ClaimFacts = {

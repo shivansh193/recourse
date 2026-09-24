@@ -4,11 +4,11 @@ import { useState } from "react";
 import IntakeStep from "./IntakeStep";
 import WorkspaceStep from "./WorkspaceStep";
 import { EMPTY_FACTS, type ClaimFacts } from "@/lib/types";
-import { EXAMPLE_FACTS } from "@/lib/mock-data";
+import { EXAMPLE_FACTS, EXAMPLE_INTAKE_TEXT } from "@/lib/mock-data";
 
 export default function FileWizard({ startAtWorkspace }: { startAtWorkspace: boolean }) {
   const [step, setStep] = useState<"intake" | "workspace">(startAtWorkspace ? "workspace" : "intake");
-  const [claimText, setClaimText] = useState("");
+  const [claimText, setClaimText] = useState(startAtWorkspace ? EXAMPLE_INTAKE_TEXT : "");
   const [facts, setFacts] = useState<ClaimFacts>(startAtWorkspace ? EXAMPLE_FACTS : EMPTY_FACTS);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,5 +50,5 @@ export default function FileWizard({ startAtWorkspace }: { startAtWorkspace: boo
       />
     );
   }
-  return <WorkspaceStep facts={facts} setFacts={setFacts} onBack={handleBack} />;
+  return <WorkspaceStep facts={facts} setFacts={setFacts} intakeText={claimText} onBack={handleBack} />;
 }
