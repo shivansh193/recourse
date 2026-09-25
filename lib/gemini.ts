@@ -1,5 +1,8 @@
 import type { VerificationResult } from "./types";
 import { CIV_1950_5_H } from "./grounding/civ-1950-5-h";
+import { hasSelfContradiction } from "./self-contradiction";
+
+export { hasSelfContradiction };
 
 // gemini-3.5-flash-lite is tried as a fallback when the primary model
 // returns 503 (observed in practice: gemini-3.8-flash intermittently
@@ -123,6 +126,14 @@ const RESPONSE_SCHEMA = {
   ],
 };
 
+// `note` is listed (and required) before `supported` deliberately: structured
+// JSON output is generated sequentially, so a model asked for the verdict
+// first commits to true/false before writing its justification — and can
+// end up justifying whatever it already committed to rather than the other
+// way around. That's what produced a real observed case of "supported: true"
+// paired with a note that argued the opposite. Asking for the evidence
+// first makes the verdict something the model derives from what it just
+// wrote, not the reverse.
 const VERIFY_RESPONSE_SCHEMA = {
   type: "object",
   properties: {
@@ -135,18 +146,23 @@ const VERIFY_RESPONSE_SCHEMA = {
             type: "string",
             enum: ["defendant", "basis", "demandMade", "periodPassed", "itemizationReceived"],
           },
-          supported: {
-            type: "boolean",
-            description:
-              "True only if the intake text actually supports this fact as drafted. False if the fact was invented, overstated, or isn't actually stated in the intake text.",
-          },
           note: {
             type: "string",
             description:
-              "One short sentence: quote or point to the specific part of the intake text that supports this fact, or explain what's missing if it isn't supported.",
+              "First, before deciding anything: one short sentence quoting or pointing to the specific " +
+              "part of the intake text relevant to this fact, or stating plainly that the text doesn't " +
+              "address it. Write this before forming a verdict.",
+          },
+          supported: {
+            type: "boolean",
+            description:
+              "Second, based only on the note you just wrote: true only if that evidence actually " +
+              "confirms the fact as drafted. False if the note shows the fact was invented, overstated, " +
+              "or isn't actually stated in the intake text. This must follow from the note, not the other " +
+              "way around.",
           },
         },
-        required: ["field", "supported", "note"],
+        required: ["field", "note", "supported"],
       },
     },
   },
@@ -159,9 +175,11 @@ export async function verifyClaimFacts(
 ): Promise<VerificationResult[]> {
   const prompt =
     "You are fact-checking a draft small claims petition against the tenant's original plain-language " +
-    "description, BEFORE it is shown to them. For each of the five drafted facts below, decide whether the " +
-    "original text actually supports it. Be strict: a fact counts as unsupported if it was inferred beyond " +
-    "what the text says, not just if it's flatly contradicted.\n\n" +
+    "description, BEFORE it is shown to them. For each of the five drafted facts below: first write what " +
+    "the original text actually says about it (or that it says nothing), THEN decide supported based only " +
+    "on that. Your verdict must follow from your own note — never write a note that says the evidence is " +
+    "missing or contradictory and then mark it supported anyway. Be strict: a fact counts as unsupported " +
+    "if it was inferred beyond what the text says, not just if it's flatly contradicted.\n\n" +
     "Original text:\n\"\"\"\n" + intakeText + "\n\"\"\"\n\n" +
     `Relevant statute (${CIV_1950_5_H.citation}), for checking periodPassed and itemizationReceived — ` +
     "the 21-day figure in those two facts comes from this law, not from memory:\n\"\"\"\n" +
@@ -176,7 +194,12 @@ export async function verifyClaimFacts(
 
   const text = await callGemini(prompt, VERIFY_RESPONSE_SCHEMA);
   const parsed = JSON.parse(text) as { results: VerificationResult[] };
-  return parsed.results;
+
+  // Belt-and-suspenders: even with evidence-first schema ordering, override
+  // a `true` verdict whose own note contradicts it, rather than trust it.
+  return parsed.results.map((r) =>
+    r.supported && hasSelfContradiction(r.note) ? { ...r, supported: false } : r
+  );
 }
 
 const JURISDICTION_RESPONSE_SCHEMA = {
