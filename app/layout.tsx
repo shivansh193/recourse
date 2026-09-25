@@ -21,10 +21,27 @@ const plexMono = IBM_Plex_Mono({
   weight: ["400", "500", "600"],
 });
 
+const SITE_URL = "https://recourse-pearl.vercel.app";
+const TITLE = "Recourse — grounded small claims filings";
+const DESCRIPTION =
+  "Check a California security deposit claim against the real statute and fill the real SC-100 form — grounded in retrieved sources, not generated from memory.";
+
 export const metadata: Metadata = {
-  title: "Recourse — grounded small claims filings",
-  description:
-    "Check a California security deposit claim against the real statute and fill the real SC-100 form — grounded in retrieved sources, not generated from memory.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
+    siteName: "Recourse",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
