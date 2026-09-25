@@ -77,10 +77,14 @@ export default function WorkspaceStep({
     };
   }, [facts.amount, activeCustomLimit]);
 
+  // CCP §116.230's fee tiers are California-specific — only show them when
+  // California's own eligibility statute is the active source. Showing a CA
+  // fee next to an active pasted jurisdiction's (e.g. Texas) limit would be
+  // wrong, not just unverified.
   const filingFee = useMemo(() => {
-    if (eligibility.amountNumber === null) return null;
+    if (eligibility.amountNumber === null || !eligibility.verified) return null;
     return calculateFilingFee(eligibility.amountNumber);
-  }, [eligibility.amountNumber]);
+  }, [eligibility.amountNumber, eligibility.verified]);
 
   // Guards against an earlier, slower request (e.g. the initial
   // verification-on-arrival call) resolving after a later one — like a
